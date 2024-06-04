@@ -1,0 +1,1123 @@
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+     "An application that will test a user’s typing speed and accuracy.
+     [ ]  1 - Test modes:
+              - Test how fast/accurate a user can type a sizable piece of text
+              - Test how many words a user can accurately type over a period of time
+     [X]  2 - the user must type the text as shown
+              - highlight the words that are correctly typed
+              - highlight the errors in the input text as they compare to the sample text
+     [ ]  3 - provide an option to disable the backspace during the test
+     [ ]  4 - remove focus after time has expired
+     [ ]  5 - customize the test time
+     [ ]  6 - provide an animated counter to display the test time
+              - counter must provide animations for each digit change (per-digit)
+                  - have at least two options for the animation
+     [X]  7 - must make use of MaterialUI components/theme
+              - make all custom components adhere to the material UI specification 
+     [X]  8 - provide feedback of accuracy, max speed and average speed.
+     [X]  9 - keep track of records
+              - date
+              - test time
+              - statistics
+     [X]  10 - show statistics as graphs and as a table
+     [ ]  11 - must have a registration form for user account. Keep information local (indexedDB)
+              - name, last name, avatar (from predefined selection), password (store hash)"
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+For this project I would like to be able to measure the user input at a "low level". I want to measure not only the time 
+taken for a user to write a text, but each character.
+
+For this reason, the first thing I must build are the components that will display a single character. 
+I need to use styled components, but in this case it is important to consider that I might need to use the --->sx<--- to configure
+the styles for the result of the user. The reason for this is:
+- When user types, there are 2 posibilities: 
+   1- user types the correct character: For this case, the component must be displayed in green 
+   2- user types incorrect character: For this case, the component must be displayed in red 
+
+  In this case, the sx styling makes it easier to achieve the desired result. 
+
+------------------------------
+------------------------------
+------------------------------
+May 20
+
+
+Now that I am able to configure the styles, it is time to configure the functionallity. 
+First approach: 
+I will create the logic that allows me to type characters and will display all characters correct. 
+It will add the characters to the screen. Format is not important.
+With the recomendations for today, my plan of using a PubSub to control the typing will be discarted, I will use 
+a reducer instead.
+
+------------------
+About the Speed Task Game: 
+ It will start displaying a word and the user must type that word. 
+ The game will evaluate the accuracy and the time elapsed between typed characters. 
+ The game must show the results "in real time" as they are being changed (or, in general terms "as state is changed")
+ The things I want to present in the statistics are: 
+    + Accuracy
+    + Average time 
+    + total success keyboard event 
+    + total errors keyboard event 
+------------------
+
+
+Today tasks: 
+- First Task: 
+   I will create the logic that allows me to type characters and will display all characters correct. 
+   It will add the characters to the screen. Format is not important.
+
+
+- Second Task: 
+   Be able to create the general structure of the system for typing the characters. For this it is important to remember that: 
+    + The important thing about this application is to measure what user inputs: characters, words, sentences, etc. 
+      This makes me think that all the user input must be processed and measure, for example, everytime that a user types a 
+      character it should: 
+         * compare with the character user is trying to match 
+         * measure the time elapsed from the last keyboard event (the incorrect characters will be counted as wrong, but counted)
+      With these measurements it is possible to address the requirement: 
+           --->"provide feedback of accuracy, max speed and average speed."<---
+
+   I need a function that will recieve 2 arguments: 
+      - The expected letter 
+      - The letter provided by the user 
+
+    The function will return an object: {isCorrect: boolean, character: *value typed by user* }
+
+    The result of that function will be for --->isCorrect and character<--- in the --->Character Component<---
+
+- Third Task: 
+   The previous discussion makes me think about the importance of creating a good "state shape". That will be used to 
+   fullfill the requirement: 
+      * keep track of records
+         * date
+         * set time
+         * statistics
+
+   What will mutate the state? 
+      The user key inputs.
+      The rest is just evaluated from that. 
+
+    About the words displayed: 
+       The words will come from some kind of dictionary in which they will be stored. When game starts or user "finish" typing 
+       the word a new word will be displayed, this will happend by putting the new word in the state. 
+
+       With that in mind it is possible to see that the state needs these parameters: 
+
+       GeneralState = {
+        currentWord: string; 
+        currentWordLength: string; // That will save time, just needed to evaluate it once
+        currentIndexInWord: string;
+       }
+
+    About the state and the keyboard events: 
+      The keyboard event triggers the event (in the reducer) {type: "keyboard-event", payload: *typed key*}
+      This event will use the --->currentIndexInWord<--- to compare the payload with the current letter in the --->currentWord<---
+      and then 
+      
+    
+
+**************
+This first idea for the state is not correct. The problem with that is that I need to update the state on every key stroke which 
+might not be efficient. 
+On the other hand, if I want the application to show the results on real time, then it might be needed to do that. 
+The other option is to pass the results as props to another component and let that component to be in charge of 
+handle the results. 
+The advantage of that approach is that only that component will re render and not the entire application
+
+Note: I need to change the types location, I do not liked to move all of them to a file (in the tic-tac-toe) 
+      (on the other hand, the important is not what I like, but the best... I need to think more about this
+       the best is the easiest)
+
+Note 2: I will follow the advice given today: I will use the reducer as a PubSub to control the actions. 
+        that will solve the problems with the state. 
+
+
+**************
+I have finished the First task for today. Now I see that the first task was incomplete. 
+I need to create the logic to be able to put some word in the state and then compare that with the input. 
+That will open the door to the Second task which are the comparisons and measurement
+------------------------------
+------------------------------
+------------------------------
+May 21
+Use variants instead of sx
+
+I have now created the general system to type and to compare the words in the state with the characters I am typing.
+It is time to move to the next step of the application. 
+
+- First Task: CREATE THE DICTIONARY FOR THE WORDS GAME: 
+                 1- The dictionary will have the words ordered by difficulty: 
+                    - Level 1:  3  character words 
+                    - Level 2:  4  character words 
+                    - Level 3:  5  character words 
+                    - Level 4:  6  character words 
+                    - Level 5:  7  character words 
+                    - Level 6:  8  character words 
+                    - Level 7:  9  character words 
+                    Taken from: https://word.tips/unscramble/_/length/9/
+- Second Task: FIX THE PROBLEM WITH THE CHARACTER COMPONENT
+
+- Third Task: DYNAMICALLY GENERATE THE WORDS TO EVALUATE: CUSTOM HOOK
+              Now I need to dynamically change the currentWord stored in the state thus I will be able to start to create 
+              the actual game functionallity. 
+              For this task, I already have the most important part which is the logic to add the word to the state. I only 
+              need to create the logic to generate change the words. 
+                For that I will create a custom component that will be in charge of doing that. It will be a good practice. 
+                The custom component should have a structure similar to useState which will give the word to set and the function 
+                to set that value when needed: 
+                   + The logic to read the data from te Json file 
+                   + The word retrieve from the Json file 
+                   + The function to change that word
+                With respect to the level I have 2 options: 
+                   * The level is send to the customHook with the "set" function 
+                   * The custom customHook contains the logic to increase the level. 
+                I prefer option 2, but it might be a good idea to have both approaches
+
+- Fourth Task: IMPROVE THE STYLING OF THE COMPONENTS USING THE THEME
+
+------------------------------
+------------------------------
+------------------------------
+May 22
+I have completed the first part of the application which is to give the application the ability to compare the 
+input characters and the current word being displayed. It is time to extend the logic in order to be able to have 
+a piece of text. That is just an extension of what I have. 
+Before that I need to be able to evaluate the success and errors in the typing. 
+Thus, my tasks for today are: 
+- First Task: CREATE THE LOGIC FOR EVALUATE USER INPUT. 
+              - The logic to make that evaluation must go in the --->index-writting<--- file 
+                exactly in the useEffect for [state?.currentIndexInWord]. By doing that, the logic for evaluation will be 
+                alongside the function --->evaluateInputKey<--- which is already evaluating. 
+              - At first glance I have thought on put the logic for statistics on the --->evaluateInputKey<--- function 
+                but that will cause it to have more than one responsibility and I have to code following the design principles. 
+                This is why I think that the best think to do is to put the 2 functions side by side but not combined. 
+                
+               There are some details that I need to think: 
+                  + What should I store?:
+                      * Should I store the object: {isCorrect: boolean; character: string;}? 
+                      * Should I store only the result: true, false? 
+                      * Should I have a counter with the total success and then compare it with the total length of 
+                        the evaluated text?
+                  + Where should I store? 
+                      * Should I store in the state? For example, store the information for the current game in the state 
+                        and when game finishes store that on the local storage? 
+                      * Or should I store everything on the localStorage? 
+                        (I think this will not be very effficient)
+
+
+- Second Task: EXTEND THE LOGIC TO HAVE THE ABILITY TO HAVE A PIECE OF TEXT NOT ONLY A WORD. 
+               The title for this task is self descriptive: I need to make the app word for a piece of text instead of just 
+               a word. 
+               The measurements should work. 
+               I will follow the point 3 of requirements: "generate a series of words"
+               With that in mind I can use the current logic, I just need to modify the --->index-add-word<--- component 
+               so it adds many words instead of just 1
+
+
+- Third Task: START WORKING ON THE CLOCK. 
+              For that I can reuse the same logic implemented for the clock of the Tic-Tac-Toe 
+
+------------------
+I will store the object {isCorrect: boolean; character: string;}
+And follow this approach:
+- Store the information for the current game in the state and when game finishes store that on the localStorage
+- I will create a component that will listen for the changes in the state thus, the statistics are updated 
+  in real time 
+
+Steps:
+   1 - Update the general state so it have a new entry named --->inputStatistics<--- which will be an object with the entries: 
+       {
+         inputInThisSession: [{isCorrect: boolean; character: string;}, {isCorrect: boolean; character: string;},...], //*****
+         totalSuccess: number // Number of correct characters  //*****
+         totalErrors:  number // Number of incorrect characters//*****
+         sucessRate: state.currentWordLength/totalSuccess, //*****
+         // This is not difficult to implement and will allow to create good graphs for displaying the letters and their 
+         // success rate 
+         // I can use --->availableCharacters<--- in this session to "feed" a similar object in the localStorage and thus 
+         // have the graph for the session and the graph for the history
+         availableCharacters: { 
+            a: {success: number, errors: numbers}, 
+            b: {success: number, errors: numbers}, 
+            c: {success: number, errors: numbers}, 
+            d: {success: number, errors: numbers}, 
+            e: {success: number, errors: numbers}, 
+            f: {success: number, errors: numbers}, 
+            g: {success: number, errors: numbers}, 
+            h: {success: number, errors: numbers}, 
+            i: {success: number, errors: numbers}, 
+            j: {success: number, errors: numbers}, 
+            k: {success: number, errors: numbers}, 
+            l: {success: number, errors: numbers}, 
+            m: {success: number, errors: numbers}, 
+            n: {success: number, errors: numbers}, 
+            o: {success: number, errors: numbers}, 
+            p: {success: number, errors: numbers}, 
+            q: {success: number, errors: numbers}, 
+            r: {success: number, errors: numbers}, 
+            s: {success: number, errors: numbers}, 
+            t: {success: number, errors: numbers}, 
+            u: {success: number, errors: numbers}, 
+            v: {success: number, errors: numbers}, 
+            w: {success: number, errors: numbers}, 
+            x: {success: number, errors: numbers}, 
+            y: {success: number, errors: numbers}, 
+            z: {success: number, errors: numbers}, 
+         }
+       }
+
+   2 - Implement the "update-statistics" event. 
+
+   3 - Create a component --->statistic-component<--- that will listen in real time for the changes in the 
+      --->state.inputStatistics.totalSuccess<--- that component will be able to display in real time the changes 
+      - It wil be reused when viewing the statistics stored in the localStorage
+   
+   4 - For the first approach, create a button that will store in the local storage the result for the current session 
+
+
+   Files to modify: 
+   - App---------------> Initial state.
+   - types ------------> to include the new type for the statistics 
+   - global-reducer ---> to add the logic to modify the --->inputStatistics<--- on every keyboard event
+
+   Note: Despite I have the event "keyboard-event" to control the keyboard events It might be a good Idea to have a separate 
+         event to control the statistics SRP will be always applied
+
+For the statisticsComponent: 
+   I will use the "Bars" graph. I need to put the data in the format that will be used by the graph
+
+
+------------------------------
+------------------------------
+------------------------------
+May 23
+Utility Functions typescript
+
+- First Task: FULLFILL ALL THE STATISTICS REQUIREMENTS
+               Yesterday I discovered that before moving to the task of extending the functionallity to have multiple words, in order
+               to have all the requirements there are some things I need to address first. Here are the requirements that I need to
+               address as the first task today: 
+                     8  - provide feedback of accuracy, max speed and average speed.
+                     10 - keep track of records
+                          * date
+                          * set time
+                          * statistics
+                     11 - show graphs
+- Second Task: FULLFILL THE TIME REQUIREMENTS: 
+               After I finish with the statistics, I need to address the time requirements which is basically to configure 
+               the timer and make the game to be controlled by the game. 
+                     1  - provide a counter for 1 minutes or custom amount
+                          * counter must provide animations for each digit change (per-digit)
+                              * have at least two options
+                     7  - remove focus after time has expired
+- Third Task: FULLTILL THE TEXT TYPING REQUIREMENTS: 
+               After having the statistics and the time requirements it is time to address the typing requirements. I have most 
+               of it completed, I just need to improve the functionallity to be more closely related with the exercise idea. 
+                    3  - generate a series of words or select a reasonable sized piece of text to display for the user to type
+                    4  - the user must type the text as shown
+                    5  - highlight the words that are correctly typed
+                    6  - disable the backspace
+                    13- highlight the errors in the input text as they compare to the sample text
+
+
+------------------
+About these requirements: "provide feedback of accuracy, max speed and average speed."
+ACCURACY: 
+   I already have that done. I have the totalSuccess and totalErrors. The sum is the --->totalKeyboardStrokes<--- The accuracy 
+   is:
+      accuracy = totalSuccess/totalKeyboardStrokes
+Add a new entry in the --->availableCharacters<--- object to put that evaluated value 
+
+------
+------
+------
+For: max speed and average speed.
+I first need to measure the speed of each keystroke and evaluate "max speed" and "average speed" from the speed measurement
+
+
+SPEED: 
+   First I need to create the definition of what the term "speed" means in the context of this applicaton. By doing that I will 
+   have the idea of the parameters to measure to evaluate the speed. 
+   The speed is the time elapsed between: 
+      1 - The moment the game starts and the first key stroke.
+      2-  A key stroke and the previous one.
+
+With the previous discussion in mind here are the changes that I need to make: 
+- In the state I need to create a new entry in the state --->lastStroke<--- which will have the timestamp of: 
+    1- The start of the game 
+    2- The last keystroke 
+
+- I will create a new event named "update-time-of-last-stroke". 
+  By doing that all the events are build with the SRP in mind. It gives me more control on the changes of the application
+
+
+
+MAX SPEED and AVERAGE SPEED: 
+I will add those to the --->inputStatistics<--- (--->maxSpeed<---, --->averageSpeed<---) object in the state. I have decided to do
+that because those are measurements of the current game, just as the other entries already present in this object. 
+I need to modify the function --->updateStatisticsObject<--- so it accepts a new input field (consider to change the input for 
+an oject, to simplify it) for the --->currentSpeed<--- (currentStroke - lastStroke) the MAX SPEED and AVERAGE SPEED can be evaluated
+from that parameter: 
+      MAX SPEED:
+         currentSpeed > maxSpeed ==> update the maxSpeed, otherwise, do not modify it 
+      
+      AVERAGE SPEED:
+         averageSpeed = (averageSpeed + currentSpeed) / 2 it is not necessary to know the value of all the previous strokes
+
+
+-----
+Additional, but easy to implement: 
+By implementing this measurement I can make some improvements to the --->availableCharacters<--- entry in the state. 
+   1 - I will add a 2 entrie into the {success: number, errors: numbers}: 
+       {success: number, errors: number, averageTime: number, accuracy: number },  
+
+   It will give the average time for each of the allowed characters. 
+   To implement that I only need to add the averageSpeed = (averageSpeed + currentSpeed) to each character which is simple 
+   and will offer a better understanding of the user
+   For the case of averageTime I will only consider correct results. There is no point to consider incorrect results 
+
+
+------------------
+I have completed the first task for today. I do not want to add more statistics, I think that with the ones that I have implemented 
+is enough to keep track of the game development. 
+
+It is time to start configuring the time. 
+To control the game I will follow a similar approach than in the Tic-Tac-Toe application: control the game using the state. 
+The advantage of doing that is that the whole application can be controlled using a single entry in the state, which makes me 
+have to worry for less things. 
+In the past application I created the time configuration using the PubSub, now I will use the reducer to control the time. 
+
+It is important to notice that the time is only a way to trigger some action in an "automated" way. 
+Thus, before configuring the timer I first need to configure the action that I want the timer to trigger. 
+
+What action do I want to be triggered by the timer? 
+   The end of the game. That will call a modal (similar to the Tic-Tac-Toe) that will show the statistics for the game 
+   and a button than when press will take user back to the landing page
+
+How will I trigger that action? 
+   I will use the state. I need to create another entry named --->isPlaying<--- in the --->ReducerStateType<--- that 
+   entry wil be used to control the game behavior. 
+   
+   For that I need to have an useState(()=>{},[state?.isPlaying]) it will detect the changes in the --->isPlaying<---
+   and will be in charge of controlling the game. 
+   
+Where will I trigger the action? 
+   In the --->index-game-view<--- file. The reason for that is: That file is the one in charge of diaplay the custom area and the 
+   statistics. When time finishes a modal must be displayed with the information. 
+
+--
+Here are the things I need to implement: 
+   1 - Create the --->isPlaying<--- entry in the state 
+   2 - Create the routing logic. I need to implement 2 views: registration/login (which I consider as 1 for the moment)
+       and the other view for the game
+   3 - Create the useState(()=>{},[state?.isPlaying]) in the --->index-game-view<--- 
+   4 - Create a button that for the moment will take the role of the counter, when I click that button it will change 
+       the value of state?.isPlaying (sending the event: "finish-game")
+   5 - Create the modal that will display the statistics for the current game (that is already done I only need to put 
+       the statistics object into the modal)
+       + The button associated with this modal will redirect the view to the landing page
+
+
+NOTE FOR THE ROUTER: 
+I will follow the same structure I used In the past, this is the previous comment: 
+ABOUT THE ROUTER (First task): 
+I will follow the approach given in this documentation: https://www.w3schools.com/react/react_router.asp
+which consists on: 
+1) Install the react router: npm i -D react-router-dom
+2) Import the component: import { BrowserRouter, Routes, Route } from "react-router-dom";
+3) Create a structure: 
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="blogs" element={<Blogs />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="*" element={<NoPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+------------------------------
+------------------------------
+------------------------------
+May 24
+- Use error boundaries
+- Use indexDB
+
+- First task: IMPROVE THE MODAL TO FINISH THE GAME. 
+              Today Mr. said someting related with the state. He suggested to replace the useState's for the reducer. 
+              I am using a reducer, so to use a useState in the component might not be the best idea. 
+              I will use the central state to control the modal. The original idea to use the reducer was to have a central 
+              state controller
+
+- Second Task: FULLFILL THE TIME REQUIREMENTS: 
+               After I finish with the statistics, I need to address the time requirements which is basically to configure 
+               the timer and make the game to be controlled by the game. 
+                     1  - provide a counter for 1 minutes or custom amount
+                          * counter must provide animations for each digit change (per-digit)
+                              * have at least two options
+                     7  - remove focus after time has expired
+
+------------------
+Now that I have configured the functionallity to manually display the modal it is time to provide that modal with information. 
+The information that will be passed to that modal is the same as the --->index-statistics-visualizer<---
+
+------------------
+I have completed the first task of the day.
+The application is now able to "finish" in a manual way. It is time to create the logic so the finalization of the game is controlled 
+by the counter. 
+Here are a few things to consider before coding:
+   1 - It is important to realize that the the time has 2 parts: 
+      VISUAL PART: 
+        This part is related on how the user will see the application (or the UI). This part includes: 
+          - The animations 
+          - 
+      TIME PART: 
+         The time is independent of how it will be displayed. The timer that will control the state of the application must be 
+         working despite of how it looks. 
+
+I will start with the TIME PART and then configure the animations. 
+It is important to design first how the timer will work and then code it: 
+   TIMER DESCRIPTION: 
+      - It is important to remember that the time will be a configurable quantity. It means that it should accept the 
+        time selected by the user as a prop (it could be updated in the state, but it will not be used anywhere else 
+        I think that to put it on the state will be a wrong use of the state)
+      - The Timer must control some entry in the state --->winnerModal<--- which will be a boolean value whose value change 
+        in 3 stages: 
+           + Starts in============> false 
+           + When game starts=====> true 
+           + When game finishes===> false
+        
+             Note: About the --->winnerModal<--- the name might not be the best option, in the past it was called --->isPlaying<---
+                   but I decided to change it to make it easier to understand the modal. Now that I will include the timer "winnerModal"
+                   does not seem like a good option. No matter the name, the important thing to notice is that: 
+                      It is in charge of controlling the start and end of the game. 
+                      The events that control its values are: 
+                         + "close-winner-modal"
+                         + "call-winner-modal"
+                       I might give more responsibilities to those events (in order to not only modify the value of winnerModal but to 
+                       reset the overall state, however, for the moment it is enough.)
+                       Comeback to this after implementing the counter. 
+       
+       - The timer recieve the --->timeInterval<--- from the prop and then uses an "interval" to decrease the time. When it reaches 
+         0 then the time is over and the --->finishGame<--- (in the index-game-view) is called (that function will be in charge to make 
+         the pertinent changes in the state, for the moment it will call the "call-winner-modal" i.e. to automatically do what I am 
+         doing manually in this moment)
+
+       - First step visualization: to visuallize the time I will use a basic h1 component. 
+       - The time must have an internal state that will be controlled using the interval. I am doing that to avoid the error that I 
+         had in the past related (or similar) to the multiple sunscriptions in the Tic-Tac-Toe application
+
+
+
+------------------
+Now that I have implemented the ability for the timer to control the "finish" of the game it is time to implement the actual 
+logic to customize the timer. 
+
+In this part I will fullfill the requirements: 
+     [ ]  4 - remove focus after time has expired
+     [ ]  5 - customize the test time
+
+So far, the application is not managing the focus nor the customization of the time. 
+It is time to implement those functionallities. 
+In first place it is important to decide where the customizations will take place. 
+The customizations include: 
+   1 - Time selection menu
+   2 - Difficuly menu
+   3 - "Start Game" button
+
+Some options are: 
+   + In the game-view. For that I need to create probably, a lateral menu with the customization menu
+   + In some modal that will disapear as soon as I click the "Start Game" button
+   + Have a route for the menu, and then the "Start Game" button will redirect the user to the game view
+
+I like the modal idea, but I will use the "lateral menu" option. The reason for that is that by using that option 
+I can implement the requisite of adding and removing the focus. If I just use a modal, that requisite might not be 
+easily visible. 
+
+Now that I know what I will implement and where it is time to implement it. 
+Here are the steps: 
+   Step 1: 
+      I need change the UI of the game. 
+        1 - I will implement a Grid that will contain 2 elements: 
+            + A Container that will "contain" all the components that now are present in the --->index-game-view<---
+            + A container that will contain the The "lateral menu" component 
+
+        By doing that I will be able to implement the changes in a simpler manner
+   
+   Step 2: 
+      Create the --->game-configurations<--- menu component that will contain: 
+          - Time selection menu
+               I like more the option of an slider. They look more elegant than the text input 
+               (and they need less work to do because of the data validation)
+          
+          - Difficuly menu.
+             It is important to remember that in my JSON file I have already configured the levels of difficulty. 
+             I can use that to customize the levels of this game. I can implement 10 levels of difficulty, and 
+             each level will display the respective words. 
+             The previous also helps me to implement the count of words per minute, which, according to what it was said 
+             it has to be related with the level. 
+               + I will also chose the slider for this. (discrete slider with 10 options )
+          
+          - "Start Game" button
+             This is a good oportunity to use the useRef hook: when user clicks the button the code will read the values 
+             in the "Time selection menu" and "Difficuly menu"
+             This might seem simple, but this button has serious responsibilities: 
+               Using the values read in the refs, it will be in charge of updating the following parameters in the state: 
+                  + --->timeInterval<---  
+                  + --->difficulty<--- (to be created)
+                  + --->winnerModal<--- (again, it needs another name)
+             
+             The game will use those configuration values to start
+             To fullfill this requirement: 
+               [ ]  4 - remove focus after time has expired
+               I will use the --->winnerModal<--- it basically indicates when the game starts and finish
+
+------------------------------
+------------------------------
+------------------------------
+May 27
+
+
+I will start working on finishing the last part of the Friday's task 
+
+- First Task: CREATE THE game-configurations COMPONENT 
+              (description given above)
+
+- Second Task: FINISH THE REQUIREMENTS: 
+               In this part I will fullfill the requirements: 
+                    [ ]  4 - remove focus after time has expired
+                    [ ]  5 - customize the test time
+
+- Third Task: ADDRESS THE COMMENTS: 
+              Todo:
+              -Fix the data to 2 or 3 decimal positions
+              -animation in timer 
+              -consistent with font family, use a single font family 
+              -Put the css in the theme dile not in the app, put the imports in a single css file
+              -give units to the data displayed
+              CONSIDER THIS: .toFixed(3) WHICH COMES FROM https://react.dev/learn/referencing-values-with-refs
+              IT MIGHT HELP TO ADDRESS ONE POINT FROM MR. IVAN
+
+
+------------------
+implement the useRef hook to read the values of the slider selectors for difficulty and time 
+by doing that the code is able to avoid using state to read a value provided by the user. 
+Note: I think this is an important point related with the performance of the application, 
+      to use the state might be costly, the operations to modify the state often have impact 
+      on different parts of the code (that effect can be prevented by using a good design of the 
+      state and the operations which modify it have a single responsibility only, minimizing the 
+      cost of each operation), to use useRef to read the values of the input implies that we have
+      something that can be easily integrable. 
+------------------
+I need to start configuring the functionallity of the "Start Game" button. 
+   These are the responsibilities: 
+     1- Change the --->timeInterval<---
+     2- Create another entry in the state named --->difficulty<--- which will be used in the logic that I 
+        will create after this component is done to change which words are displayed
+     3- Change the --->difficulty<--- to the value given by the user in the "difficulty" slider
+
+     Note: I need to be careful with the time-logic already implemented. 
+           I need to replace the clock logic to display when the component is rendered, and move it to that 
+           logic be triggered by the "Start Game" button.
+
+Files to modify: 
+1 - index-lateral-menu.tsx
+    + TO ADD THE useRef TO THE difficulty AND time SLIDERS
+    + TO SEND THE EVENTS: 
+       - {type: "set-interval-time", totalTime: *time for interval*}
+       - {type: "set-difficulty", difficulty: *difficulty*}
+       - {type: "start-game"} 
+
+2 - initial-view.tsx 
+     + TO DELETE THE dispatch!({ type: "start-game" }); (WHICH NOW WILL BE HANDLED BY THE "Start Game" BUTTON)
+
+3 - global-reducer.tsx
+      I will create the --->"start-game"<--- AND --->"end-game"<--- event which will be a more consice way to do what is
+        currently being done by the events: 
+        "close-winner-modal"
+        "call-winner-modal"
+
+        So, the work is: 
+           + "close-winner-modal"===> change name to "start-game"
+           + "call-winner-modal" ===> change name to "finish-game"
+           + "set-interval-time" ===> CREATE
+           + "set-difficulty"    ===> CREATE
+
+4 - index-game-view.tsx 
+      + TO ADD THE NECESSARY DISPATCH'S FOR THE EVENTS
+
+5 - types.tsx 
+      + TO ADD THE NEW TYPES OF THE REDUCERS: 
+         - "start-game"
+         - "finish-game"
+         - "set-interval-time" 
+         - "set-difficulty"    
+       
+------------------
+I need to make a small modification to the --->index-timer.tsx<--- file. I need to put the logic to control the timer 
+in a ref. That will improve the performance of the application.
+Not very small, but now is working. 
+
+------------------
+I need to work on fullfilling these requirements: 
+   [ ]  4 - remove focus after time has expired
+   [ ]  5 - customize the test time
+
+To implement that it is not necessary to make so much changes. It is only necessary to use what has already been implemented. 
+In first place: 
+ 4 - remove focus after time has expired
+In my case I am not using a text input to control the keyboard events, this is why the focus will be about allowing 
+user the ability to type characters. 
+Option 1:
+    I can, for example, to add the event listener not like in the --->index-writing.tsx--- file:
+        window.addEventListener("keydown", handleKeyPress);
+    
+    But to limit the event listener to: 
+        window.addEventListener("keydown", handleKeyPress);
+    
+        Note: a useRed might be useful for this
+
+Option 2: 
+    The events are still called like this: 
+       window.addEventListener("keydown", handleKeyPress);
+    but there will be "controlled" by the --->winnerModal<--- in the state: 
+    basically to indicate when it should "listen" for the events and when to do nothing
+
+
+I will implement Option 2. 
+I will use the  --->winnerModal<--- to control the keyboard events
+
+------------------
+
+
+------------------------------
+------------------------------
+------------------------------
+May 28
+- CONNECT TO INDEXDB ONCE AND USE THAT CONNECTION
+- CREATE A SINGLETON FOR THE INDEXDB
+
+
+I need to work on fullfilling these requirements: 
+   [ ]  4 - remove focus after time has expired
+        I HAVE PARTIALLY FINISHED THIS, I ONLY NEED TO MAKE SOME CHANGES: 
+        + CHANGE THE COLOR OF THE WRITING COMPONENT WHEN Start Button IS PRESSED 
+        + NOT ALLOW CHARACTERS BEFORE THAT 
+   [ ]  5 - customize the test time
+
+
+IT IS A GOOD IDEA, BUT I NEED TO MOVE ON
+Notes: 
+   + I have to make a refactorization with the idea of improving performance. The system I have built so far 
+     is not handling the updates of the state (which I am using extensively), I need to make code improvements, 
+     for example implement useRef to handle certain things that I do on the state so far, I can, for example 
+     to create some context for particular refs, that will allow me to have something similar to the state 
+     but with the advantage of not cause re-renders. 
+     It is possible to use a modified version of the reducer (a "modified" version because the idea will be to only use 
+     the power offered by the reducer logic, the return for all the cases could be the same reference to the state, which 
+     will not be interpreted as a change because the reference will be the same) which will accept the events for 
+     modify the value in the useRef's provided in the context. I will need to implement some functions that will read 
+     the value of those useRef's whenever they needed. 
+     I can have the same operations already use... in fact I am not very far from this component: 
+        "All my components are already using the reducer to handle the application. The problem 
+        I am facing is exactly that: I am over using so the application have a lot of re renders.
+        I just need to implement the useRefs to replace the state."
+
+
+- Today's Task:  MODIFY THE REDUCER TO COORDINATE THE USER ACTIONS. 
+                   Justification: This component will be the one in charge of processing user input 
+                                  and coordinate the app's responses accordingly
+
+                    The final idea is to replace the state modifications to change the values stored 
+                    in the refs. 
+
+                    Steps: 
+                       1- Locate the entry points to the reducer and indicate with console.log where those 
+                          entrypoints are. 
+                       2- Create the context for each reducer and then add all those context in a ContextProvider
+                       3- Veryfy that the different events in the reducer are able to modify the values of the refs 
+                       4- Veryfy that the app is able to retrieve the information from the refs. 
+
+                 Note: 
+                    Once this new version is ready, the rest will be simple, it will only necessary 
+                    to create new events for the Register and Login views. 
+                    The database can be openned or something similar in the reducer file, or be imported 
+                    on it. 
+                    The advantage of this approach is that I can configure the application and the database 
+                    to have compatible input/output logic (which need to be generic)
+------------------
+It is important to consider that the fact of having the state being modified on every change is not very good 
+for performance. 
+The memoization does not helo because it only checks if props have changed 
+
+------------------
+I have already finished the Login and Register components with simple frontend validation, it is time to implement 
+the functionallity that will help me to create a new user or to validate user credentials (Login and Register actions)
+
+
+It is a good time to test my previous idea: 
+I will put the refs in the context, and I will dispatch event that will modify them
+- It is very important to give each text input (--->form-item<---) the ability to make other 
+  components to be aware of their values. 
+  The reason for that is because the idea of the --->form-item<--- to be agnostic components 
+  is that I do not have to worry about the fields. 
+  However, the data base needs a particular set of information to validate user credentials 
+  that is mandatory
+
+
+------------------------------
+------------------------------
+------------------------------
+May 29
+
+Yesterday I almost finish the logic for the Login and Register components. There are some improvements that I want to 
+implement. 
+- First Task:   MAKE THE IMPROVEMENTS TO THE LOGIN AND REGISTER 
+                The "items" in the <FormHolder/>  will accept a new parameter: 
+                I want to pass a function to update the pertinent entry in the state.
+
+- Second Task: IDENTIFY THE PLACES IN THE GAME IN WHICH THE CODE WILL MAKE AN OPERATION RELATED WITH THE DATABASE 
+                By doing that I will have the interface for communicating with the database. 
+                I have to: 
+                   - build the test function that communicate with the --->database-operations.ts<--- file 
+                     using the proper types. That will make clear about what the game will "provide"
+                     make it easier to build the actual logic that will communicate with the actual DB
+
+------------------
+I might need to implement changes in some parts of the code. Here are some intermediate modifications:
+   1 - It is important to remember that each user must have a profile stored in the indexDB. That profile 
+       must contain: 
+          +  User information: 
+             - name: string, 
+             - email : string,
+             - avatar: string,
+             - hashed password: string,
+             - statistics: InputStatisticsType,
+          
+          statistics*
+             It is basically what is provided by the type --->InputStatisticsType<--- 
+             Note: It is important to remeber that the operations that modify any of the fields in the state 
+                   stored in the database must extract the information provided by the game and update the necessary fields 
+
+   2 - To locate the places in which the game connects with the database: 
+
+       LOGIN/REGISTER: 
+         They BOTH need logic to handle the "login" functionallity (which might be called: --->loginInDatabse<---)
+         the reason is that: 
+            - When user logs in the code must:
+               a - validate the information 
+               b - retrieve the profile information:
+                   + name: string, 
+                   + email : string,
+                   + avatar: string,
+
+         Receiving this response the code will proceed to the "/game" route. 
+         The last analyzis makes it possible to see that this will be the place in which I have to implement 
+         the protected route (it is in some sense controlled by the database response )
+                  
+          About --->loginInDatabse<---, it will be:
+             - A promise 
+             - Type:
+               loginInDatabse(userID: string, password: string) => { name: string, email : string, avatar: string} | false
+
+          The promise will be solved and based on the response decide to which route to navigate
+
+       LOGIN: 
+         2.1 - Only when "Login" button is pressed ==> validation ()
+
+       LOGOUT:
+       
+       REGISTER:
+         2.2 - On the debounced functionallity of the typing in the text, to check if the input parameter is valid. 
+               In password it helps user to type a good password ==> validation: (input:string) => true | false 
+         2.3 - When "Register" button is pressed  ==>  creation: (values:RegisterCredentialsType) => userInfoType
+               the userInfoType = {name, lastname, avatar, email}
+
+
+
+       STATISTICS: 
+         2.4 - When game finishes: In the past I decided that the function --->handleModalClose<--- in the 
+               --->index-game-view.tsx<--- file to be the place of where the connection of the database must be
+
+         2.5 - Each type the user requests for the statistics. I decided that it is not necessary to retrieve the 
+               statistics from the "validation of credentials" operation and request that only when user request it. 
+
+
+
+   3 - About the database expectations:
+       
+
+
+------------------------------
+------------------------------
+------------------------------
+May 30
+
+About the IndexDB: 
+   - I am considering to use indeces to:   - "If you have an object store which holds a set of people, and you want 
+                                             to ensure that no two people have the same email address, you can use
+                                             an index with the unique flag set to enforce this."
+                                           - "An index lets you look up the values stored in an object store using
+                                             the value of a property of the stored object, rather than the object's key.
+  
+Transactions have three available modes:
+   -readonly
+   -readwrite
+   -versionchange.
+
+Comments to the indexDB literature: 
+1 - It is very important to understand the different interfaces involved in the IndexDB logic. 
+    Here are some examples:
+       + IDBFactory--------------Lets applications asynchronously access the indexed databases. The object that implements
+                                 the interface is window.indexedDB. You open — that is, create and access — and delete a 
+                                 database with this object, and not directly with IDBFactory.  
+    
+       + IDBRequest--------------Provides access to results of asynchronous requests to databases and database objects 
+                                 using event handler attributes. Each reading and writing operation on a database is 
+                                 done using a request.
+    
+       + IDBOpenDBRequest--------Provides access to the results of requests to open or delete databases (performed using
+                                 IDBFactory.open and IDBFactory.deleteDatabase), using specific event handler attributes.
+    
+       + IDBDatabase-------------Provides a connection to a database; you can use an IDBDatabase object to open a transaction
+                                 on your database then create, manipulate, and delete objects (data) in that database. The
+                                 interface provides the only way to get and manage versions of the database.
+    
+       + IDBTransaction----------Provides a static, asynchronous transaction on a database using event handler attributes.
+                                 All reading and writing of data is done within transactions. You use IDBDatabase to start
+                                 transactions, IDBTransaction to set the mode of the transaction (e.g. is it readonly or
+                                 readwrite), and you access an IDBObjectStore to make a request. You can also use an
+                                 IDBTransaction object to abort transactions. By understanding those interfaces I will be
+                                 able to create a robust API to control the information storage. 
+    
+       + IDBObjectStore----------Represents an object store in a database. Records within an object store are sorted according
+                                 to their keys. This sorting enables fast insertion, look-up, and ordered retrieval.
+
+       + IDBVersionChangeEvent---Indicates that the version of the database has changed, as the result of an onupgradeneeded
+                                 event handler function.
+
+//////////////////////////////////////////////////////////////////////////////////////////                             
+This is the information given in the documentation with added comments: 
+    => const request = window.indexedDB.open("MyTestDatabase", 3);
+"The open request doesn't open the database or start the transaction right away."
+
+This is what happens: 
+ "request" (in the code above) becomes a IDBOpenDBRequest object. 
+ IDBOpenDBRequest object has the structure: 
+ EventTarget <== IDBRequest <== IDBOpenDBRequest
+
+ It is important to notice that: 
+   - "all asynchronous methods return a request object"
+      + IDBRequest -------- For all the requests
+      + IDBOpenDBRequest--- For the particular case of "open()" method 
+
+   -  "All asynchronous operations immediately return an IDBRequest instance"
+      "Each request has a --->readyState<---"
+      About readyState: 
+         * "pending" state: Initial state. 
+         * "done" state:    "when the request is completed or fails"
+   - "When the state is set to done, every request returns" either:
+      + A result
+      + An error
+      
+Now from the above discussion it is evident that it is necessary to create the logic to handle the 
+2 possible events: --->error<--- or --->success<---
+
+According to the documentation, there are 2 options (at least): 
+    --------------------------------------------
+    OPTION 1: 
+    request.addEventListener("error" ,  (event) => {
+      // ERROR
+    }) ;
+ 
+    request.addEventListener("success" ,  (event) => {
+      // SUCCESS
+    }) ;
+    --------------------------------------------
+    OPTION 2: 
+        request.onerror = (event) => {
+         // ERROR
+    };
+    request.onsuccess = (event) => {
+         // SUCCESS
+    };
+    --------------------------------------------
+   
+   I personally prefer OPTION 1 i think it is more meaningful, I spent some minutes thrying to findout what 
+   "onerror" means
+
+
+I might need to have to "Object Store"'s:
+   1 - To store the validation credentials for the users
+   2 - To store the user statistics
+
+
+Transactions: 
+   1 - Come from the database object IDBDatabase
+   2 - You have to specify which object stores you want the transaction to span
+   3 - You need to decide if you're going to make changes to the database or if you just need to read from it. 
+       + readonly
+       + readwrite
+       + versionchange.
+
+   - When defining the scope, specify only the object stores you need. This way, you can run multiple transactions
+     with non-overlapping scopes concurrently.
+   
+   - Only specify a readwrite transaction mode when necessary. You can concurrently run multiple readonly transactions
+     with overlapping scopes, but you can have only one readwrite transaction for an object store. To learn more, see
+     the definition for transaction in the IndexedDB key characteristics and basic terminology article.
+
+It is possible to find the types for the IDB, for example: IDBOpenDBRequest
+
+
+-------------------------IMPORTANT-------------------------
+When creating a database, i.e. when using the window.indexedDB.open() method (and I guess that also for the case of
+updating a db version), the order of execution is: 
+   1 - OpenDBRequestObj.onupgradeneeded
+   2 - OpenDBRequestObj.onsuccess
+   3 - It seems that the database accepts stringified versions of the objects, but not the objcets themselves. 
+       That will be important when storing the statistics from the games
+
+That makes evident that the object stores must be created on the -->OpenDBRequestObj.onupgradeneeded<-- part
+
+
+
+-------------------------IMPORTANT-------------------------
+
+------------------------------
+------------------------------
+------------------------------
+May 31
+Validation could be improved 
+Max number of characters in the fields
+navigations in the different parts 
+imporve statistics: values align units, add spaces between words (in the titles)
+make fonts match 
+use theme 
+/////////////
+
+
+------------------------------
+------------------------------
+------------------------------
+June 03
+PENDING COMMENTS
+-----
+First comments
+Validation could be improved 
+Max number of characters in the fields
+navigations in the different parts 
+imporve statistics: values align units, add spaces between words (in the titles)
+make fonts match 
+use theme 
+-----
+Second comments
+- Add the text of good size
+- improve the contrast of error 
+- avoid console log to debug 
+- example for database must not pollute the base code 
+
+
+
+-----
+Note for today: 
+   It is important to consider what the "reusability" term means. It depends upon on how the information 
+   will be used by that component. 
+   The problem I have now is: 
+      My --->statistics-visualizer<--- component  is "reusable" if I use the state, but it has the problem 
+      that if I want to use it for displaying the information comming from the database then it wont be able 
+      (before some modifications).
+
+
+Things I need to provide as prop:
+- totalSuccess
+- totalErrors
+- charactersResults ... which is set by: state?.InputStatistics.availableCharacters as AvailableCharactersType
+
+Change:
+   - The component <DataTable /> will recieve the info as prop and not from the state. 
+     This change is necessary in the case I want to reuse the <DataTable /> to display the data 
+     retrieve from the database.
+
+   - The component <StatisticsVisualizer/> has an internal state that controlls how the information will be displayed
+     It is possible to use that as starting point. 
+     The component does not have an useEffect that controls the render, this makes simpler the intergation with the props 
+        1 - Modify the component to accept 
+               + success
+               + errors
+               + availableCharacters
+        
+        2 - Create an useEffect(()=>{},[]) that will check if the props are provided, if so, then use: 
+               + setTotalSuccess
+               + setTotalErrors
+               + setCharactersResults
+            to update the values using the props values
+
+
+        3 - I need to create a new modal to display the information when user requests the graphics
+            The new modal will basically only display the component: 
+            <StatisticsVisualizer success = {} errors = {} availableCharacters = {} />
+            Note: Nothing else to worry, the StatisticsVisualizer is already modified
+
+
+---------------
+Now that I have finished the retrieval of information it is time to modify the register and login functionallities. 
+When the user has successfully login: 
+   + I need to create a new entry named --->validatedUserEmail<--- in the state so it can contain the information of a
+     logged in user 
+   + --->validatedUser<--- will contain the -->email<-- retrieved by the -->login<-- and -->register<-- operations 
+     it will work similar to an "authenticated token" in the sense that it will be used to validate the user information 
+   + I will need a new dispatch event to update the --->validatedUserEmail<--- when login, register and offline
+
+   Note: About the -->offline<-- for this implementation, I do not need to do anything on the database to notify 
+        offline, only need to dispatch the event: dispatch!({type: "notify-user-offline"})
+
+   Things to add: 
+      1 - Add the new entry in the state: --->validatedUserEmail<--- which will be an email
+      2 - Create the events: 
+          +   dispatch!({type: "notify-user-offline"})
+          +   dispatch!({type: "notify-user-online", validatedUserEmail: *some email*})
+
+      3 - Modify the -->global-reducer<-- file
+      4 - Add the types
+
+
+
+There is one final thing I need to improve: 
+   I need modify the code so in the login and register the database retrieves: 
+      + avatar 
+      + email 
+      + name 
+
+   The "avatar" and "name" will be used in the game view to display the user information 
+
+---------------
+Now that I have finished condiguring the database, it is time to work on the details that are still missing. 
+I need to start making the modifications to improve the app view. 
+
+The first thing to do is to find out the best layout for the components
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+General notes: 
+- It is easier to develop if I use a good typing structure. Types are meant to make the development easy.
+- I need to dedicate more time to learn GitHub. I do not like to upload files as I am doing now. 
+- I need to refactor the application so I use the central state and avoid using useEffect and useState. That will offer me a 
+  simpler version of the components
+- I need to improve the color pallet. I do not like how the components look. They must look beautiful not just good
+- It general I need to improve the styling. The good news is that functionallity is good
+- I should use the levels I already have configured. 
+  The only thing I need to modify is how the words are being displayed (the order that user experiments)
